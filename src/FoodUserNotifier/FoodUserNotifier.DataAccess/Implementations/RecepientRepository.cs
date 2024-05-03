@@ -1,34 +1,71 @@
 ﻿using FoodUserNotifier.DataAccess.Entities;
 using FoodUserNotifier.DataAccess.Interfaces;
 using FoodUserNotifier.DataAccess.Types;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace FoodUserNotifier.DataAccess.Implementations
+namespace FoodUserNotifier.DataAccess.Implementations;
+
+public class RecepientRepository : IRecepientRepository, IDisposable
 {
-    public class RecepientRepository : IRecepientRepository
+    private readonly IServiceScope _serviceScope;
+    private readonly DatabaseContext _context;
+    private bool disposedValue;
+
+
+    public RecepientRepository(IServiceScopeFactory scopeFactory)
     {
-        public Recepient Create(Recepient recepient)
-        {
-            throw new NotImplementedException();
-        }
+        _serviceScope = scopeFactory.CreateScope();
+        _context = _serviceScope.ServiceProvider.GetRequiredService<DatabaseContext>();
+    }
 
-        public void Delete(Guid id)
-        {
-            throw new NotImplementedException();
-        }
+    public Recepient Create(Recepient recepient)
+    {
+        _context.Add(recepient);
+        return recepient;
+    }
 
-        public IEnumerable<Recepient> GetAllForRole(Role role)
-        {
-            throw new NotImplementedException();
-        }
+    public void Delete(Guid id)
+    {
+        Recepient foundRecepient = GetById(id);
+        _context.Recepients.Remove(foundRecepient);
+        _context.SaveChanges();
+    }
 
-        public Recepient GetById(Guid id)
-        {
-            throw new NotImplementedException();
-        }
+    public IEnumerable<Recepient> GetAll()
+    {
+        return _context.Recepients;
+    }
 
-        public void Update(Recepient recepient)
+    public IEnumerable<Recepient> GetAllForRole(Role role)
+    {
+        return _context.Recepients.Where(item => item.Role == role);
+    }
+
+    public Recepient GetById(Guid id)
+    {
+        return _context.Recepients.FirstOrDefault(item => item.Id.Equals(id));
+    }
+
+    public void Update(Recepient recepient)
+    {
+        _context.Entry(recepient).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposedValue)
         {
-            throw new NotImplementedException();
+            if (disposing)
+            {
+                _serviceScope.Dispose();
+            }
+            disposedValue = true;
         }
+    }
+
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
     }
 }
